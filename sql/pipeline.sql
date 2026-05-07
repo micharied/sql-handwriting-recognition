@@ -70,7 +70,36 @@ thinning_phase(id, stroke_id, x, y) AS (
         y
     FROM thinning_scan
     WHERE keep_point
+),
+curvature_directions_calc(id, stroke_id, x, y, direction) AS (
+    SELECT
+        id,
+        stroke_id,
+        x,
+        y,
+        CASE
+            WHEN ABS(x - LAG(x) OVER w) >= ABS(y - LAG(y) OVER w)
+            THEN CASE WHEN x >= LAG(x) OVER w THEN 'right' ELSE 'left' END
+            ELSE CASE WHEN y >= LAG(y) OVER w THEN 'up' ELSE 'down' END
+        END AS direction
+    FROM thinning_phase
+    WINDOW w AS (PARTITION BY stroke_id ORDER BY id)
+),
+curvature_cleanup(id, stroke_id, x, y, direction) AS (
+    SELECT id, stroke_id, x, y, direction
+    FROM (
+        SELECT
+            id,
+            stroke_id,
+            x,
+            y,
+            direction,
+            LAG(direction) OVER (PARTITION BY stroke_id ORDER BY id) AS prev_direction
+        FROM curvature_directions_calc
+        WHERE direction IS NOT NULL
+    ) t
+    WHERE direction IS DISTINCT FROM prev_direction
 )
 SELECT *
-FROM thinning_phase
+FROM curvature_cleanup
 ORDER BY stroke_id, id;

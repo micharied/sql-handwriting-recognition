@@ -1,17 +1,4 @@
 WITH RECURSIVE
-raw_data(id, stroke_id, x, y) AS (
-    VALUES  (1, 1, 0.0::DECIMAL(8,4), 0.0::DECIMAL(8,4)),
-            (2, 1, 0.05::DECIMAL(8,4), 0.05::DECIMAL(8,4)),
-            (3, 1, 0.1::DECIMAL(8,4), 0.1::DECIMAL(8,4)),
-            (4, 1, 0.15::DECIMAL(8,4), 0.15::DECIMAL(8,4)),
-            (5, 1, 0.8::DECIMAL(8,4), 0.8::DECIMAL(8,4)),
-            (6, 1, 1.0::DECIMAL(8,4), 1.0::DECIMAL(8,4)),
-            (7, 1, 1.2::DECIMAL(8,4), 1.2::DECIMAL(8,4)),
-            (8, 1, 1.5::DECIMAL(8,4), 1.5::DECIMAL(8,4)),
-            (9, 1, 2.0::DECIMAL(8,4), 2.0::DECIMAL(8,4)),
-            (10, 1, 2.05::DECIMAL(8,4), 2.05::DECIMAL(8,4)),
-            (11, 1, 2.1::DECIMAL(8,4), 2.1::DECIMAL(8,4))
-),
 smoothing_phase(id, stroke_id, x, y) AS (
     SELECT id,
         stroke_id,
@@ -21,7 +8,7 @@ smoothing_phase(id, stroke_id, x, y) AS (
     WHERE id = (
             SELECT MIN(id)
             FROM raw_data
-            WHERE stroke_id = 1
+            WHERE stroke_id = 186
         )
     UNION ALL
     SELECT r.id,

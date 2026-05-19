@@ -1,5 +1,5 @@
-SET VARIABLE smoothing_factor = 0.8;
-SET VARIABLE thinning_threshold = 0.20;
+SET VARIABLE smoothing_factor = 0.65;
+SET VARIABLE thinning_threshold = 0.22;
 
 WITH RECURSIVE
 smoothing_phase(pos, x, y) AS (
@@ -66,7 +66,29 @@ curvature_cleanup(pos, x, y, direction) AS (
         WHERE direction IS NOT NULL
     ) t
     WHERE direction IS DISTINCT FROM prev_direction
+),
+directions_16_calc(pos, x, y, direction) AS (
+    SELECT
+        pos,
+        x,
+        y,
+        CAST(((ATAN2(y - LAG(y) OVER w2, x - LAG(x) OVER w2) * 180 / PI() + 360 + 11.25) % 360) / 22.5 AS INTEGER) AS direction
+    FROM thinning_scan
+    WHERE keep_point
+    WINDOW w2 AS (ORDER BY pos)
+),
+corners(pos, x, y) AS (
+    SELECT pos, x, y
+    FROM directions_16_calc
+    WHERE direction IS NOT NULL
+    WINDOW w3 AS (ORDER BY pos)
+    QUALIFY
+        LEAST(ABS(LEAD(direction, 1) OVER w3 - LAG(direction, 1) OVER w3),
+              16 - ABS(LEAD(direction, 1) OVER w3 - LAG(direction, 1) OVER w3)) >= 4
+        AND LAG(direction, 1) OVER w3 = LAG(direction, 2) OVER w3
+        AND LEAD(direction, 1) OVER w3 = LEAD(direction, 2) OVER w3
 )
 SELECT *
-FROM curvature_cleanup
-ORDER BY pos;
+FROM corners 
+ORDER BY pos
+LIMIT 30;

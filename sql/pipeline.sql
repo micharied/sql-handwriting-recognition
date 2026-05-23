@@ -1,5 +1,5 @@
-SET VARIABLE smoothing_factor = 0.65;
-SET VARIABLE thinning_threshold = 0.22;
+SET VARIABLE smoothing_factor = 0.75;
+SET VARIABLE thinning_threshold = 0.35;
 
 WITH RECURSIVE
 smoothing_phase(pos, x, y) AS (
@@ -39,6 +39,7 @@ curvatures(pos, x, y, direction) AS (
             x,
             y,
             CASE
+                WHEN LAG(x) OVER w IS NULL THEN NULL
                 WHEN ABS(x - LAG(x) OVER w) >= ABS(y - LAG(y) OVER w)
                 THEN CASE WHEN x >= LAG(x) OVER w THEN 'right' ELSE 'left' END
                 ELSE CASE WHEN y >= LAG(y) OVER w THEN 'up' ELSE 'down' END

@@ -1,3 +1,4 @@
 .vscode
 .direnv
 .envrc
+debug_pipeline_tmp_tables.sql

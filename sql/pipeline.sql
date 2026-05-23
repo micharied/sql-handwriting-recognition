@@ -15,29 +15,21 @@ smoothing_phase(pos, x, y) AS (
     FROM raw_data r
         JOIN smoothing_phase s ON r.pos = s.pos + 1
 ),
-thinning_scan(pos, x, y, last_keep_x, last_keep_y, keep_point) AS (
-    SELECT pos,
-        x,
-        y,
-        x AS last_keep_x,
-        y AS last_keep_y,
-        TRUE AS keep_point
+thinning_scan(pos, x, y) AS (
+    SELECT pos, x, y
     FROM smoothing_phase
     WHERE pos = 1
     UNION ALL
-    SELECT s.pos,
-        s.x,
-        s.y,
-        CASE WHEN sqrt((s.x - t.last_keep_x)^2 + (s.y - t.last_keep_y)^2) > getvariable('thinning_threshold')
-            THEN s.x ELSE t.last_keep_x
-        END AS last_keep_x,
-        CASE WHEN sqrt((s.x - t.last_keep_x)^2 + (s.y - t.last_keep_y)^2) > getvariable('thinning_threshold')
-            THEN s.y ELSE t.last_keep_y
-        END AS last_keep_y,
-        sqrt((s.x - t.last_keep_x)^2 + (s.y - t.last_keep_y)^2) > getvariable('thinning_threshold') AS keep_point
-    FROM thinning_scan t
-    JOIN smoothing_phase s
-        ON s.pos = t.pos + 1
+    SELECT next_keep.pos, next_keep.x, next_keep.y
+    FROM thinning_scan ts
+    CROSS JOIN LATERAL (
+        SELECT pos, x, y
+        FROM smoothing_phase
+        WHERE pos > ts.pos
+          AND sqrt((x - ts.x)^2 + (y - ts.y)^2) > getvariable('thinning_threshold')
+        ORDER BY pos
+        LIMIT 1
+    ) next_keep
 ),
 curvature_directions_calc(pos, x, y, direction) AS (
     SELECT
@@ -50,7 +42,6 @@ curvature_directions_calc(pos, x, y, direction) AS (
             ELSE CASE WHEN y >= LAG(y) OVER w THEN 'up' ELSE 'down' END
         END AS direction
     FROM thinning_scan
-    WHERE keep_point
     WINDOW w AS (ORDER BY pos)
 ),
 curvature_cleanup(pos, x, y, direction) AS (
@@ -74,7 +65,6 @@ directions_16_calc(pos, x, y, direction) AS (
         y,
         CAST(((ATAN2(y - LAG(y) OVER w2, x - LAG(x) OVER w2) * 180 / PI() + 360 + 11.25) % 360) / 22.5 AS INTEGER) AS direction
     FROM thinning_scan
-    WHERE keep_point
     WINDOW w2 AS (ORDER BY pos)
 ),
 corners(pos, x, y) AS (

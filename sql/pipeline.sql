@@ -1,5 +1,9 @@
-SET VARIABLE smoothing_factor = 0.75;
-SET VARIABLE thinning_threshold = 0.35;
+SET VARIABLE smoothing_factor = 0.8;
+SET VARIABLE thinning_threshold = 0.2;
+
+CREATE OR REPLACE TEMPORARY MACRO cell_of(px, py, min_x, min_y, w, h) AS
+    LEAST(FLOOR((px - min_x) / NULLIF(w, 0) * 4), 3)::INTEGER * 4
+    + LEAST(FLOOR((py - min_y) / NULLIF(h, 0) * 4), 3)::INTEGER;
 
 WITH RECURSIVE
 smoothing_phase(pos, x, y) AS (
@@ -68,8 +72,22 @@ corners(pos, x, y) AS (
               16 - ABS(LEAD(direction, 1) OVER w3 - LAG(direction, 1) OVER w3)) >= 4
         AND LAG(direction, 1) OVER w3 = LAG(direction, 2) OVER w3
         AND LEAD(direction, 1) OVER w3 = LEAD(direction, 2) OVER w3
+),
+first_directions AS (
+    SELECT list(direction ORDER BY pos)[1:4] AS dirs
+    FROM curvatures
+),
+character_direction_rules AS (
+    SELECT * FROM (VALUES
+        ('Z', ['right', 'down', 'right']),
+        ('2', ['up', 'right', 'down', 'right']),
+    ) AS t(char, prefix)
+),
+character_recognition AS (
+    SELECT DISTINCT cf.char
+    FROM first_directions fd
+    CROSS JOIN character_direction_rules cdt 
+    WHERE
+        fd.dirs[1:len(cdt.prefix)] = cdt.prefix
 )
-SELECT *
-FROM corners 
-ORDER BY pos
-LIMIT 30;
+SELECT * FROM character_recognition;

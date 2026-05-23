@@ -31,32 +31,22 @@ thinning_scan(pos, x, y) AS (
         LIMIT 1
     ) next_keep
 ),
-curvature_directions_calc(pos, x, y, direction) AS (
-    SELECT
-        pos,
-        x,
-        y,
-        CASE
-            WHEN ABS(x - LAG(x) OVER w) >= ABS(y - LAG(y) OVER w)
-            THEN CASE WHEN x >= LAG(x) OVER w THEN 'right' ELSE 'left' END
-            ELSE CASE WHEN y >= LAG(y) OVER w THEN 'up' ELSE 'down' END
-        END AS direction
-    FROM thinning_scan
-    WINDOW w AS (ORDER BY pos)
-),
-curvature_cleanup(pos, x, y, direction) AS (
+curvatures(pos, x, y, direction) AS (
     SELECT pos, x, y, direction
     FROM (
         SELECT
             pos,
             x,
             y,
-            direction,
-            LAG(direction) OVER (ORDER BY pos) AS prev_direction
-        FROM curvature_directions_calc
-        WHERE direction IS NOT NULL
-    ) t
-    WHERE direction IS DISTINCT FROM prev_direction
+            CASE
+                WHEN ABS(x - LAG(x) OVER w) >= ABS(y - LAG(y) OVER w)
+                THEN CASE WHEN x >= LAG(x) OVER w THEN 'right' ELSE 'left' END
+                ELSE CASE WHEN y >= LAG(y) OVER w THEN 'up' ELSE 'down' END
+            END AS direction
+        FROM thinning_scan
+        WINDOW w AS (ORDER BY pos)
+    )
+    QUALIFY direction IS DISTINCT FROM LAG(direction) OVER (ORDER BY pos)
 ),
 directions_16_calc(pos, x, y, direction) AS (
     SELECT

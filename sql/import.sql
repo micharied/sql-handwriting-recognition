@@ -13,4 +13,4 @@ INSERT INTO raw_data (pos, x, y)
 SELECT nextval('raw_data_pos_seq') AS pos,
     x,
     y
-FROM read_json_auto('sql/Z_2.json');
+FROM read_json_auto(coalesce(getvariable('sample_file'), 'test_samples/Z_2.json'));

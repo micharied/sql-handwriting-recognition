@@ -5,6 +5,28 @@ CREATE OR REPLACE TEMPORARY MACRO cell_of(px, py, min_x, min_y, w, h) AS
     LEAST(FLOOR((px - min_x) / NULLIF(w, 0) * 4), 3)::INTEGER * 4
     + LEAST(FLOOR((py - min_y) / NULLIF(h, 0) * 4), 3)::INTEGER;
 
+CREATE OR REPLACE TABLE character_direction_rules AS
+SELECT * FROM (VALUES
+    ('2', ['up', 'right', 'down', 'right']),
+    ('5', ['left', 'down', 'right', 'down']),
+    ('A', ['up', 'down', 'up', 'left']),
+    ('B', ['up', 'right', 'down', 'left']),
+    ('C', ['left', 'down', 'right']),
+    ('D', ['up', 'right', 'down', 'left']),
+    ('E', ['left', 'down', 'right', 'left']),
+    ('F', ['left', 'down', 'right', 'left']),
+    ('G', ['left', 'down', 'right', 'up', 'left']),
+    ('H', ['down', 'up', 'right', 'up', 'down']),
+    ('I', ['down']),
+    ('K', ['down', 'up', 'right', 'up']),
+    ('L', ['down', 'right']),
+    ('M', ['up', 'down', 'up', 'down']),
+    ('N', ['up', 'down', 'up']),
+    ('O', ['left', 'down', 'right', 'up']),
+    ('P', ['up', 'right', 'down', 'left']),
+    ('Z', ['right', 'down', 'right'])
+) AS t(char, prefix);
+
 WITH RECURSIVE
 smoothing_phase(pos, x, y) AS (
     SELECT pos,
@@ -74,20 +96,14 @@ corners(pos, x, y) AS (
         AND LEAD(direction, 1) OVER w3 = LEAD(direction, 2) OVER w3
 ),
 first_directions AS (
-    SELECT list(direction ORDER BY pos)[1:4] AS dirs
+    SELECT list(direction ORDER BY pos) AS dirs
     FROM curvatures
 ),
-character_direction_rules AS (
-    SELECT * FROM (VALUES
-        ('Z', ['right', 'down', 'right']),
-        ('2', ['up', 'right', 'down', 'right']),
-    ) AS t(char, prefix)
-),
 character_recognition AS (
-    SELECT DISTINCT cf.char
+    SELECT DISTINCT cdr.char
     FROM first_directions fd
-    CROSS JOIN character_direction_rules cdt 
+    CROSS JOIN character_direction_rules cdr
     WHERE
-        fd.dirs[1:len(cdt.prefix)] = cdt.prefix
+        fd.dirs[1:len(cdr.prefix)] = cdr.prefix
 )
 SELECT * FROM character_recognition;

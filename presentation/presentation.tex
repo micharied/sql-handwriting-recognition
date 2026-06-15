@@ -1,0 +1,187 @@
+% ============================================================
+%  Seminar-Präsentation – Generisches Template
+%  Beamer + Metropolis-Theme
+% ============================================================
+\documentclass[aspectratio=169, 12pt]{beamer}
+
+% ── Theme ───────────────────────────────────────────────────
+\usetheme{metropolis}
+\usecolortheme{default}
+
+% ── Sprache & Encoding ──────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}   % ggf. auf [english] wechseln
+
+% ── Schriften ───────────────────────────────────────────────
+\usepackage{FiraSans}         % passt gut zu Metropolis
+\usepackage{FiraMono}         % Monospace für Code
+
+% ── Mathematik ──────────────────────────────────────────────
+\usepackage{amsmath, amssymb, amsthm}
+
+% ── Code-Highlighting ───────────────────────────────────────
+\usepackage{listings}
+\lstset{
+  language     = SQL,
+  basicstyle   = \ttfamily\small,
+  keywordstyle = \bfseries\color{mLightBrown},
+  commentstyle = \itshape\color{gray},
+  stringstyle  = \color{mLightGreen},
+  numbers      = left,
+  numberstyle  = \tiny\color{gray},
+  frame        = single,
+  breaklines   = true,
+  showstringspaces = false,
+  tabsize      = 2,
+}
+
+% ── Grafik & Tabellen ───────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+
+% ── Bibliographie ───────────────────────────────────────────
+\usepackage[backend=biber, style=acmnumeric]{biblatex}
+\addbibresource{references.bib}   % eigene .bib-Datei
+
+% ── Metadaten ───────────────────────────────────────────────
+\title{Titel der Präsentation}
+\subtitle{Untertitel}
+\author{Vorname Nachname}
+\institute{Universität · Seminar: \textit{Seminarname}}
+\date{\today}
+
+% ============================================================
+\begin{document}
+
+% ── Titelfolie ──────────────────────────────────────────────
+\maketitle
+
+% ── Gliederung ──────────────────────────────────────────────
+\begin{frame}{Gliederung}
+  \tableofcontents
+\end{frame}
+
+% ============================================================
+\section{Einführung}
+% ============================================================
+
+% Einfache Bullet-Liste
+\begin{frame}{Thema und Motivation}
+  \begin{itemize}
+    \item Erster Punkt zur Einführung
+    \item Zweiter Punkt – Kontext und Relevanz
+    \item Ziel dieses Vortrags
+  \end{itemize}
+\end{frame}
+
+% Block + Beispiel nebeneinander
+\begin{frame}{Definition}
+  \begin{block}{Kernbegriff}
+    Hier steht eine formale oder inhaltliche Definition des zentralen Begriffs.
+  \end{block}
+
+  \bigskip
+  \begin{example}
+    Ein konkretes Beispiel, das die Definition veranschaulicht.
+  \end{example}
+\end{frame}
+
+
+% ============================================================
+\section{Lösungen}
+% ============================================================
+
+% TikZ-Ablaufdiagramm
+\begin{frame}{Lösungsansatz – Überblick}
+  \begin{center}
+    \begin{tikzpicture}[
+        node distance = 2cm,
+        box/.style    = {draw, rounded corners, minimum width=2.8cm,
+                         minimum height=0.7cm, align=center, font=\small},
+        arr/.style    = {-Stealth, thick},
+      ]
+      \node[box] (a) {Schritt 1};
+      \node[box] (b) [right=of a] {Schritt 2};
+      \node[box] (c) [right=of b] {Schritt 3};
+      \node[box] (d) [right=of c] {Ergebnis};
+      \draw[arr] (a) -- (b);
+      \draw[arr] (b) -- (c);
+      \draw[arr] (c) -- (d);
+    \end{tikzpicture}
+  \end{center}
+  \begin{itemize}
+    \item Erster Schritt: \ldots
+    \item Zweiter Schritt: \ldots
+  \end{itemize}
+\end{frame}
+
+% Code-Folie (fragile ist Pflicht bei lstlisting!)
+\begin{frame}[fragile]{Lösung – Codebeispiel}
+  \begin{lstlisting}
+-- Beispiel-Query
+SELECT spalte1, spalte2
+FROM   tabelle
+WHERE  bedingung = TRUE
+ORDER  BY spalte1;
+  \end{lstlisting}
+  \begin{itemize}
+    \item Erläuterung Zeile 1--2: Was wird selektiert?
+    \item Erläuterung Zeile 3: Filterbedingung
+  \end{itemize}
+\end{frame}
+
+% ============================================================
+\section{Kritik}
+% ============================================================
+
+% Alertblock für Schwächen
+\begin{frame}{Limitierungen}
+  \begin{alertblock}{Bekannte Schwächen}
+    Dieser Ansatz funktioniert nicht optimal, wenn \ldots
+  \end{alertblock}
+
+  \bigskip
+  \begin{itemize}
+    \item Einschränkung 1 – Begründung
+    \item Einschränkung 2 – Begründung
+    \item Offene Frage / ungelöstes Teilproblem
+  \end{itemize}
+\end{frame}
+
+
+% ============================================================
+\section{Fazit}
+% ============================================================
+
+\begin{frame}{Zusammenfassung}
+  \begin{itemize}
+    \item \textbf{Problem:} Kurze Wiederholung der Fragestellung
+    \item \textbf{Lösung:} Kernidee in einem Satz
+    \item \textbf{Stärken:} Was funktioniert gut?
+    \item \textbf{Schwächen:} Was bleibt offen?
+  \end{itemize}
+
+  \bigskip
+  \begin{block}{Kernaussage}
+    Der vorgestellte Ansatz eignet sich besonders für \ldots,
+    stößt aber bei \ldots an seine Grenzen.
+  \end{block}
+\end{frame}
+
+\begin{frame}{Ausblick}
+  \begin{itemize}
+    \item Mögliche Erweiterung 1
+    \item Mögliche Erweiterung 2
+    \item Interessante Folgefrage für künftige Arbeit
+  \end{itemize}
+\end{frame}
+
+% ── Literatur ───────────────────────────────────────────────
+\begin{frame}[allowframebreaks]{Literatur}
+  \printbibliography[heading=none]
+\end{frame}
+
+\end{document}

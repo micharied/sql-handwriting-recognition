@@ -1,6 +1,7 @@
 % ============================================================
-%  Seminar-Präsentation – Generisches Template
+%  Seminar Presentation – Handwriting Recognition in SQL
 %  Beamer + Metropolis-Theme
+%  DB Group Tübingen, "SQL is a Programming Language"
 % ============================================================
 \documentclass[aspectratio=169, 12pt]{beamer}
 
@@ -8,19 +9,19 @@
 \usetheme{metropolis}
 \usecolortheme{default}
 
-% ── Sprache & Encoding ──────────────────────────────────────
+% ── Language & Encoding ─────────────────────────────────────
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage[ngerman]{babel}   % ggf. auf [english] wechseln
+\usepackage[english]{babel}
 
-% ── Schriften ───────────────────────────────────────────────
-\usepackage{FiraSans}         % passt gut zu Metropolis
-\usepackage{FiraMono}         % Monospace für Code
+% ── Fonts ───────────────────────────────────────────────────
+\usepackage{FiraSans}
+\usepackage{FiraMono}
 
-% ── Mathematik ──────────────────────────────────────────────
+% ── Math ────────────────────────────────────────────────────
 \usepackage{amsmath, amssymb, amsthm}
 
-% ── Code-Highlighting ───────────────────────────────────────
+% ── Code Highlighting ───────────────────────────────────────
 \usepackage{listings}
 \lstset{
   language     = SQL,
@@ -36,152 +37,353 @@
   tabsize      = 2,
 }
 
-% ── Grafik & Tabellen ───────────────────────────────────────
+% ── Graphics & Tables ───────────────────────────────────────
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tikz}
-\usetikzlibrary{positioning, arrows.meta}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric}
 
-% ── Bibliographie ───────────────────────────────────────────
+% ── Bibliography ────────────────────────────────────────────
 \usepackage[backend=biber, style=acmnumeric]{biblatex}
-\addbibresource{references.bib}   % eigene .bib-Datei
+\addbibresource{references.bib}
 
-% ── Metadaten ───────────────────────────────────────────────
-\title{Titel der Präsentation}
-\subtitle{Untertitel}
-\author{Vorname Nachname}
-\institute{Universität · Seminar: \textit{Seminarname}}
+% ── Metadata ────────────────────────────────────────────────
+\title{Handwriting Recognition in SQL}
+\subtitle{Groner's GRAIL Recognizer as a Relational Pipeline}
+\author{Micha Riedlinger}
+\institute{University of Tübingen\\
+           Seminar: \href{https://db.cs.uni-tuebingen.de/teaching/ss26/sql-is-a-programming-language/}{\textit{SQL is a Programming Language}}}
 \date{\today}
 
 % ============================================================
 \begin{document}
 
-% ── Titelfolie ──────────────────────────────────────────────
+% ── Title slide ─────────────────────────────────────────────
 \maketitle
 
-% ── Gliederung ──────────────────────────────────────────────
-\begin{frame}{Gliederung}
-  \tableofcontents
-\end{frame}
-
 % ============================================================
-\section{Einführung}
+\section{Problem}
 % ============================================================
 
-% Einfache Bullet-Liste
-\begin{frame}{Thema und Motivation}
-  \begin{itemize}
-    \item Erster Punkt zur Einführung
-    \item Zweiter Punkt – Kontext und Relevanz
-    \item Ziel dieses Vortrags
-  \end{itemize}
+\begin{frame}{What is Handwriting Recognition?}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \begin{itemize}
+        \item Input: sequence of $(x, y)$ coordinates captured by a stylus
+        \item Goal: identify the drawn character (letter or digit)
+        \item Origin: GRAIL system (RAND Corporation, 1966) — real-time recognition on an IBM System/360
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.40\textwidth}
+      % Replace with actual RAND tablet figure (vector PDF)
+      \begin{tikzpicture}
+        \draw[thick] (0,0) rectangle (2.5,2.5);
+        \node[gray] at (1.25,1.25) {\textit{[Tablet]}};
+        \draw[blue, thick, ->]
+          (0.3,2.0) .. controls (0.8,2.2) and (1.5,1.8) ..
+          (1.8,1.2) .. controls (2.0,0.8) and (1.5,0.4) ..
+          (0.5,0.4);
+        \node[blue, font=\small] at (1.25,0.1) {raw stroke};
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
-% Block + Beispiel nebeneinander
-\begin{frame}{Definition}
-  \begin{block}{Kernbegriff}
-    Hier steht eine formale oder inhaltliche Definition des zentralen Begriffs.
+\begin{frame}{Why Is This Interesting?}
+  \begin{block}{The key challenge}
+    \begin{itemize}
+      \item tablet discretisation introduces jaggies in every stroke
+      \item A single character produces dozens of noisy, redundant coordinate
+    points
+    \item two people writing the same letter look very different
+    on paper
+    \item two diffrent characters can have many similarities
+    \item ideally we can recognize the character fast
+    \end{itemize}
   \end{block}
 
   \bigskip
-  \begin{example}
-    Ein konkretes Beispiel, das die Definition veranschaulicht.
+  \begin{example}[the digit \textbf{5} vs the letter \textbf{S}]
+    \begin{itemize}
+      \item Drawn in one stroke, left $\to$ down $\to$ right $\to$ down $\to$ left
+      \item Corners resolve the ambiguity
+    \end{itemize}
   \end{example}
 \end{frame}
 
-
 % ============================================================
-\section{Lösungen}
+\section{Solution: The Pipeline}
 % ============================================================
 
-% TikZ-Ablaufdiagramm
-\begin{frame}{Lösungsansatz – Überblick}
-  \begin{center}
-    \begin{tikzpicture}[
-        node distance = 2cm,
-        box/.style    = {draw, rounded corners, minimum width=2.8cm,
-                         minimum height=0.7cm, align=center, font=\small},
-        arr/.style    = {-Stealth, thick},
-      ]
-      \node[box] (a) {Schritt 1};
-      \node[box] (b) [right=of a] {Schritt 2};
-      \node[box] (c) [right=of b] {Schritt 3};
-      \node[box] (d) [right=of c] {Ergebnis};
-      \draw[arr] (a) -- (b);
-      \draw[arr] (b) -- (c);
-      \draw[arr] (c) -- (d);
-    \end{tikzpicture}
-  \end{center}
+\begin{frame}{Approache to Character Recognition}
+  \textbf{Feature-based (Groner)}
   \begin{itemize}
-    \item Erster Schritt: \ldots
-    \item Zweiter Schritt: \ldots
+    \item Extract compact stroke features
+    \item Rule-based decision tree
+    \item Fast, interpretable, works in real-time
   \end{itemize}
-\end{frame}
 
-% Code-Folie (fragile ist Pflicht bei lstlisting!)
-\begin{frame}[fragile]{Lösung – Codebeispiel}
-  \begin{lstlisting}
--- Beispiel-Query
-SELECT spalte1, spalte2
-FROM   tabelle
-WHERE  bedingung = TRUE
-ORDER  BY spalte1;
-  \end{lstlisting}
-  \begin{itemize}
-    \item Erläuterung Zeile 1--2: Was wird selektiert?
-    \item Erläuterung Zeile 3: Filterbedingung
-  \end{itemize}
-\end{frame}
-
-% ============================================================
-\section{Kritik}
-% ============================================================
-
-% Alertblock für Schwächen
-\begin{frame}{Limitierungen}
-  \begin{alertblock}{Bekannte Schwächen}
-    Dieser Ansatz funktioniert nicht optimal, wenn \ldots
+  \bigskip
+  \begin{alertblock}{Why Groner's pipeline suits SQL}
+    Each processing stage is a \emph{set transformation} on an ordered
+    sequence of points — a natural fit for relational queries with
+    window functions and recursive CTEs.
   \end{alertblock}
+\end{frame}
 
-  \bigskip
+\begin{frame}{Groner's Five-Stage Pipeline}
+  \begin{center}
+    \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance = 0.5cm,
+        box/.style = {draw, rounded corners, minimum width=2.0cm,
+                      minimum height=0.75cm, align=center, font=\small},
+        arr/.style = {-Stealth, thick},
+      ]
+      \node[box]                    (raw)    {Raw\\Points};
+      \node[box, right=of raw]      (smooth) {Smoothing};
+      \node[box, right=of smooth]   (thin)   {Thinning};
+      \node[box, right=of thin]     (curv)   {Curvature};
+      \node[box, right=of curv]     (corn)   {Corner\\Detection};
+      \node[box, right=of corn]     (dec)    {Decision\\Tree};
+
+      \draw[arr] (raw)    -- (smooth);
+      \draw[arr] (smooth) -- (thin);
+      \draw[arr] (thin)   -- (curv);
+      \draw[arr] (curv)   -- (corn);
+      \draw[arr] (corn)   -- (dec);
+    \end{tikzpicture}}
+  \end{center}
+
+  \alert{Hier ggf. an jeden Pipeline Schritt notieren, welche Herausforderung gefixt wird.}
+
+
   \begin{itemize}
-    \item Einschränkung 1 – Begründung
-    \item Einschränkung 2 – Begründung
-    \item Offene Frage / ungelöstes Teilproblem
+    \item Each stage is one SQL \texttt{WITH} clause — the full pipeline is a single query
+    \item Running example: digit \textbf{3} passes through each stage
   \end{itemize}
 \end{frame}
 
+
+% ── Stage 1 ─────────────────────────────────────────────────
+\begin{frame}[fragile]{Stage 1 — Smoothing}
+  Remove quantisation noise with an exponential moving average
+  (IIR low-pass filter): each smoothed point is a weighted blend
+  of the previous smoothed point and the new raw point.
+  \[
+    x^s_i = \alpha \cdot x^s_{i-1} + (1-\alpha) \cdot x^r_i
+    \qquad
+    y^s_i = \alpha \cdot y^s_{i-1} + (1-\alpha) \cdot y^r_i
+  \]
+
+  \alert{Here a example + visualization like in the blog article!}
+\end{frame}
+
+\begin{frame}[fragile]{Stage 1 — Smoothing Implementation}
+  \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+SELECT pos,
+        x,
+        y
+    FROM raw_data
+    WHERE pos = 1
+    UNION ALL
+    SELECT r.pos,
+        get('factor')*s.x + (1 - get('factor')) * r.x AS sx,
+        get('factor')*s.y + (1 - get('factor')) * r.y AS sy
+    FROM raw_data r
+        JOIN smoothing_phase s ON r.pos = s.pos + 1
+  \end{lstlisting}
+\end{frame}
+
+% ── Stage 2 ─────────────────────────────────────────────────
+\begin{frame}[fragile]{Stage 2 — Thinning}
+  Discard points too close to the last accepted point $(x^t_{j-1}, y^t_{j-1})$
+  to remove redundancy from slow pen movement:
+  \[
+    \text{accept } (x^s_i, y^s_i)
+    \iff
+    \sqrt{(x^s_i - x^t_{j-1})^2 + (y^s_i - y^t_{j-1})^2} \;>\; \tau
+  \]
+  \begin{itemize}
+    \item Threshold $\tau$ defines an acceptance radius around the last kept point
+    \item Original GRAIL used a bounding-square test ($|\Delta x| \geq \tau$ or $|\Delta y| \geq \tau$);
+          we use Euclidean distance — rotation-invariant
+    \item Pipeline value: $\tau = 0.2$ (normalised coordinates)
+  \end{itemize}
+
+  \alert{Here a example + visualization like in the blog article!}
+\end{frame}
+
+\begin{frame}[fragile]{Stage 2 — Thinning Implementation}
+  \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+    SELECT pos, x, y
+    FROM smoothing_phase
+    WHERE pos = 1
+    UNION ALL
+    SELECT next_keep.pos, next_keep.x, next_keep.y
+    FROM thinning_scan ts
+    CROSS JOIN LATERAL (
+        SELECT pos, x, y
+        FROM smoothing_phase
+        WHERE pos > ts.pos
+          AND sqrt((x - ts.x)^2 + (y - ts.y)^2) > getvariable('thinning_threshold')
+        ORDER BY pos
+        LIMIT 1
+    ) next_keep
+  \end{lstlisting}
+\end{frame}
+
+% ── Stage 3 ─────────────────────────────────────────────────
+\begin{frame}[fragile]{Stage 3 — Curvature Detection}
+  Assign one of four cardinal directions to each segment by comparing
+  the bounding rectangle's width to its height
+  ($\Delta x = x^t_i - x^t_{i-1}$, $\Delta y = y^t_i - y^t_{i-1}$):
+  \[
+    d_i =
+    \begin{cases}
+      \text{right} / \text{left} & \text{if } |\Delta x| \geq |\Delta y|,
+                                   \text{ sign of } \Delta x \\[2pt]
+      \text{up} / \text{down}    & \text{if } |\Delta x| < |\Delta y|,
+                                   \text{ sign of } \Delta y
+    \end{cases}
+  \]
+  Only \emph{changes} in direction are kept — e.g.\ \textbf{L} becomes
+  $\downarrow\,\rightarrow$, \textbf{O} becomes
+  $\leftarrow\,\downarrow\,\rightarrow\,\uparrow$.
+
+  \alert{Here a example + visualization like in the blog article!}
+\end{frame}
+
+\begin{frame}[fragile]{Stage 3 — Curvature Detection Implementation}
+  \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+SELECT pos, x, y,
+    CASE
+        WHEN LAG(x) OVER w IS NULL THEN NULL
+        WHEN ABS(x - LAG(x) OVER w) >= ABS(y - LAG(y) OVER w)
+        THEN CASE WHEN x >= LAG(x) OVER w THEN 'right' ELSE 'left' END
+        ELSE CASE WHEN y >= LAG(y) OVER w THEN 'up' ELSE 'down' END
+    END AS direction
+FROM thinning_scan
+WINDOW w AS (ORDER BY pos)
+  \end{lstlisting}
+\end{frame}
+
+% ── Stage 4 ─────────────────────────────────────────────────
+\begin{frame}[fragile]{Stage 4 — Corner Detection}
+  Corners need finer angular resolution — encode each segment as one of
+  16 sectors via $\theta_i = \operatorname{atan2}(\Delta y, \Delta x)$:
+  \[
+    d_i = \left\lfloor
+      \frac{(\theta_i + 11.25^\circ) \bmod 360^\circ}{22.5^\circ}
+    \right\rfloor \in \{0, \dots, 15\}
+  \]
+  A corner is flagged at point $i$ when all three hold:
+  \begin{itemize}
+    \item Two segments before share a direction: $d_{i-1} = d_{i-2}$
+    \item Two segments after share a direction: $d_{i+1} = d_{i+2}$
+    \item Angular change $\geq 90^\circ$ (4 of 16 sectors), with wrap-around:
+      \[
+        \min\!\bigl(|d_{i+1} - d_{i-1}|,\; 16 - |d_{i+1} - d_{i-1}|\bigr) \geq 4
+      \]
+  \end{itemize}
+
+  \alert{Here a example + visualization like in the blog article!}
+\end{frame}
+
+\begin{frame}[fragile]{Stage 4 — Corner Detection Implementation}
+  \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+SELECT pos, x, y
+FROM directions_16_calc
+WHERE direction IS NOT NULL
+WINDOW w3 AS (ORDER BY pos)
+QUALIFY
+    LEAST(ABS(LEAD(direction, 1) OVER w3 - LAG(direction, 1) OVER w3),
+          16 - ABS(LEAD(direction, 1) OVER w3 - LAG(direction, 1) OVER w3)) >= 4
+    AND LAG(direction, 1) OVER w3 = LAG(direction, 2) OVER w3
+    AND LEAD(direction, 1) OVER w3 = LEAD(direction, 2) OVER w3
+  \end{lstlisting}
+\end{frame}
+
+% ── Stage 5 ─────────────────────────────────────────────────
+\begin{frame}[fragile]{Stage 5 — Character Recognition}
+  Combine direction sequence, corner count/position, start/end cell,
+  and aspect ratio to identify the character:
+
+  \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+character_recognition AS (
+    SELECT DISTINCT cdr.char
+    FROM first_directions fd
+    CROSS JOIN character_direction_rules cdr
+    WHERE
+        fd.dirs[1:len(cdr.prefix)] = cdr.prefix
+)
+  \end{lstlisting}
+  \alert{Noch nicht vollständig!}
+\end{frame}
+
+% ── Full pipeline ────────────────────────────────────────────
+\begin{frame}[fragile]{Putting It All Together}
+  The complete recogniser is \emph{one SQL query}:
+
+  \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+WITH
+  smoothed   AS ( ... ),   -- Stage 1: window avg
+  thinned    AS ( ... ),   -- Stage 2: recursive CTE
+  directions AS ( ... ),   -- Stage 3: CASE + LAG
+  corners    AS ( ... ),   -- Stage 4: direction diff
+  result     AS ( ... )    -- Stage 5: CASE cascade
+SELECT character FROM result;
+  \end{lstlisting}
+
+\end{frame}
 
 % ============================================================
-\section{Fazit}
+\section{Demo}
 % ============================================================
 
-\begin{frame}{Zusammenfassung}
-  \begin{itemize}
-    \item \textbf{Problem:} Kurze Wiederholung der Fragestellung
-    \item \textbf{Lösung:} Kernidee in einem Satz
-    \item \textbf{Stärken:} Was funktioniert gut?
-    \item \textbf{Schwächen:} Was bleibt offen?
-  \end{itemize}
-
-  \bigskip
-  \begin{block}{Kernaussage}
-    Der vorgestellte Ansatz eignet sich besonders für \ldots,
-    stößt aber bei \ldots an seine Grenzen.
-  \end{block}
+\begin{frame}{Live Demo}
+  \alert{Hier kurze Beschreibung für Setup, damit jedy es im Nachhinein einfach selbst testen kann.}
 \end{frame}
 
-\begin{frame}{Ausblick}
-  \begin{itemize}
-    \item Mögliche Erweiterung 1
-    \item Mögliche Erweiterung 2
-    \item Interessante Folgefrage für künftige Arbeit
-  \end{itemize}
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+\begin{frame}{Limitations \& Outlook}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Limitations}
+      \begin{itemize}
+        \item Single-stroke characters only\\(Groner's original: multi-stroke)
+        \item Decision tree hand-coded\\— biased toward one writing style
+        \item Recursive thinning: row-by-row,\\not easily parallelised
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Outlook}
+      \begin{itemize}
+        \item Extend to multi-stroke via\\pen-up/pen-down events
+        \item Learn thresholds from data\\(SQL + ML hybrid)
+        \item Compare with modern DNN\\approaches (trade-offs)
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
-% ── Literatur ───────────────────────────────────────────────
-\begin{frame}[allowframebreaks]{Literatur}
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item \textbf{Problem:} real-time recognition of handprinted characters
+          from noisy coordinate streams
+    \item \textbf{Solution:} Groner's 5-stage feature-extraction pipeline,
+          implemented as a single SQL \texttt{WITH} query
+    \item \textbf{Key SQL constructs:} window functions (smoothing, direction),
+          recursive CTE (thinning), \texttt{CASE} cascade (decision tree)
+  \end{itemize}
+
+\end{frame}
+
+% ── References ──────────────────────────────────────────────
+\begin{frame}[allowframebreaks]{References}
   \printbibliography[heading=none]
 \end{frame}
-
 \end{document}

@@ -1,0 +1,50 @@
+% Feel free to use this preamble as is and add more to it! Define your own lstset and lstdefinelanguage.
+
+% Please use correct typesetting for Latin abbreviations:
+\newcommand{\ie}{\textit{i.e.},}
+\newcommand{\eg}{\textit{e.g.},}
+
+\usepackage{listings}
+% Here you can define the general look of your listings, e.g., whether to have line numbers, how to display key words, comments, strings etc. There are a lot of other options. Check out our papers (https://db.cs.uni-tuebingen.de/publications/) to see what listings designs are possible. Get creative here!
+\lstset{
+  basicstyle=\ttfamily,
+  basewidth=0.5em,
+  numbers=left,
+  numberstyle=\tiny\color{black!50},
+  numbersep=5pt,
+  keywordstyle=[1]\bfseries,
+  keywordstyle=[2]\color{blue!70},
+  % emphstyle=\color{code-pink},
+  commentstyle=\color{black!40},
+  stringstyle=\color{green}
+}
+
+% I define my own shell language instead of using the predefined bash language because it knows very little keywords. There are many more options you can define for your own language.
+\lstdefinelanguage{sql}{
+morestring=[d]{"},
+morecomment=[l]{--},
+keywords=[1]{WITH, RECURSIVE, SELECT, FROM, WHERE, AS},
+keywords=[2]{MIN},
+}
+
+% Add a floating environment such that listings also float to the top or bottom of pages.
+\usepackage{float}
+\newfloat{lstfloat}{htbp}{lop}
+\floatname{lstfloat}{Listing}
+\def\lstfloatautorefname{Listing} % needed for hyperref/auroref
+
+% Easy references for figures, listings, and tables. No need to provide the correct names/numbers. The package takes care of everything.
+\usepackage{cleveref}
+\crefname{section}{Section}{Sections}
+\crefname{subsection}{Section}{Sections}
+\crefname{subsubsection}{Section}{Sections}
+\crefname{appendix}{Appendix}{Appendices}
+\crefname{equation}{Equation}{Equations}
+\crefname{figure}{Figure}{Figures}
+\crefname{table}{Table}{Tables}
+\crefname{subfigure}{Figure}{Figures}
+\crefname{subtable}{Table}{Tables}
+\crefname{lstfloat}{Listing}{Listings}
+
+\usepackage{tikz}
+\usetikzlibrary {shapes.geometric}

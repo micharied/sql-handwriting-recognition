@@ -1,0 +1,171 @@
+% !TeX program = latexmk -lualatex
+\documentclass[sigconf,nonacm,screen]{acmart}
+
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    Bib\TeX}}}
+
+\setcopyright{cc}
+\setcctype{by-sa}
+\copyrightyear{2023} 
+
+\input{preamble.tex}
+
+\begin{document} 
+ 
+\title{Paper Writing in LaTex---How To}
+%\subtitle{A subtitle is purely optional} 
+
+\author{Louisa Lambrecht}
+\email{louisa.lambrecht@uni-tuebingen.de}
+\affiliation{%
+  \institution{University of Tübingen, Germany}
+}
+
+\begin{abstract}
+  Start with a structured abstract as a tiny text. That should \textbf{not} become your final version of an abstract without alteration.
+  
+  An abstract (for a short paper) should comprise about 100 - 150 words. Please, write a minimum of 80 and a maximum of 200 words.
+\end{abstract}
+
+\keywords{Keywords, To, Increase, Discoverability}
+
+\maketitle
+
+\section{Introduction}
+
+Please find appropriate titles for your sections. \textit{Introduction, Conclusion} are clearly present in the same position in every paper. Be creative here.
+
+
+\section{Layout and Typesetting}
+
+Correct layout and typesetting are essential. You must use the provided LaTeX template as the basis for your paper. This template defines the formatting, margins, spacing, and fonts, and these must not be altered under any circumstances. Paper submissions for conferences that do not adhere to the layout rules are usually desk-rejected, \ie{} they are rejected without even reading it. 
+
+The only exception to this rule is the so-called tt font (short for typewriter text). This font is typically used for code snippets, filenames, and terminal output. In LaTeX, it is accessed using the \texttt{texttt} command or with the \texttt{listings} environment. You may adjust the appearance of this font---for example, to improve legibility of your code---but please do so thoughtfully.
+
+While the template provides a solid foundation, it does not take care of everything for you. You are responsible for the final look and readability of your paper. Pay close attention to the following issues:
+
+\begin{itemize}
+    
+    \item Hyphenation: Check your document for poor or missing hyphenation. LaTeX does a good job in most cases, but it is not perfect---especially with non-English or technical terms. You can use \- to manually suggest hyphenation points if needed.
+    
+    \item Line and page breaks: Sometimes LaTeX may break lines or pages in awkward places such as between a heading and the following paragraph, or in the middle of a code block or figure. These situations often require manual adjustment sometimes by rewriting text to fit appropriate space. Do not us commands like \texttt{pagebreak}, or \texttt{newpage} lightly.
+
+    \item Overflowing elements: Figures, tables, and code listings that extend into the margins or off the page are unacceptable. Always review your compiled PDF and make sure everything fits cleanly within the page boundaries.
+
+    \item Code listings: Pay special attention to how your code appears. Avoid breaking listings across pages when possible. If a long snippet must be broken, try to split it at a logical point and use captions or comments to help the reader follow along.
+    
+\end{itemize}
+
+In short, use the template, but do not trust it blindly. A well-typeset paper reflects not only your technical knowledge, but also your care and professionalism. If something looks strange, fix it. If you are not sure how, ask. This is part of the writing process, and it is a skill you will carry forward in all your academic work.
+
+\subsection{Code Blocks}
+
+When creating code listings with LaTeX, it's important to ensure clarity, readability, and professional formatting. Common issues include missing syntax highlighting or language keywords, which can be addressed by defining your own language with \texttt{\\lstdefinelanguage{sql}} with the \texttt{listings} usepackage. 
+
+Enable line numbers with options like \texttt{numbers=left} within the \texttt{\\lstset} command to support referencing and discussions. You can also change colors and numerous other options in \texttt{\\lstset} to style your code listings.
+
+Avoid presenting large, uninterrupted blocks of code---split long listings into logical parts or use ellipses to skip unimportant sections. Lastly, include meaningful comments in the code itself to explain non-obvious logic or design choices; this makes the code more accessible. 
+
+Always include a clear and descriptive caption using the \texttt{\\caption{}} command and put the listing into a floating environment (\eg{} the \texttt{figure} environment). Ensure that code listings are placed near the relevant text. Always reference the listing in your text. A listing that is not referenced will not receive attention from the reader. When referencing a specific listing/figure/table, the designator is always spelled with an uppercase letter. The \texttt{cleveref} usepackage enables easy referencing of my listings/figures/tables and takes care of that. \cref{lst:my-code-block} is now referenced. 
+
+\begin{lstfloat}[b]
+    \begin{lstlisting}[language=sql]
+WITH RECURSIVE t AS (
+  SELECT 1 AS x
+)
+-- a meaningful comment
+SELECT MIN(x) AS x
+FROM   t
+WHERE  x > 0;
+\end{lstlisting}
+    \caption{A code listing.}
+    \label{lst:my-code-block}
+\end{lstfloat}
+
+\subsection{Tables}
+Tables are a good way of presenting lots of numbers in a paper. In the written form, the reader has enough time to take in all the content. If possible and with the appropriate meaning, plot data.
+
+\texttt{table} is the floating environment for tabular data. Table captions belong above the table. Tables should also always be referenced (see \cref{tab:my-table})!
+
+\textbf{Always use \href{https://nhigham.com/2019/11/19/better-latex-tables-with-booktabs/}{booktabs} style:}
+\begin{itemize}
+    \item Booktabs only uses horizontal lines, no vertical lines.
+    \item Booktabs has thick horizontal lines in the beginning and end of the table that frame the table vertically (top and bottom rules).
+    \item A thinner midrule separates the header from the table content.
+    \item Additional even thinner c rules (latex lingo) can separate the header further.
+\end{itemize}
+
+\begin{table}[t]
+  \centering
+  \caption{A table also needs a caption. }
+  \label{tab:my-table}
+  \begin{tabular}{lcccccl}\toprule
+    & \multicolumn{3}{c}{$\text{tol}=u_{\text{single}}$} & \multicolumn{3}{c}{$\text{tol}=u_{\text{double}}$}
+    \\\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    & $mv$  & Rel.~err & Time    & $mv$  & Rel.~err & Time\\\midrule
+    \texttt{trigmv}    & 11034 & 1.3e-7 & 3.9 & 15846 & 2.7e-11 & 5.6 \\
+    \texttt{trigexpmv} & 21952 & 1.3e-7 & 6.2 & 31516 & 2.7e-11 & 8.8 \\
+    \texttt{trigblock} & 15883 & 5.2e-8 & 7.1 & 32023 & 1.1e-11 & 1.4e1\\
+    \texttt{expleja}   & 11180 & 8.0e-9 & 4.3 & 17348 & 1.5e-11 & 6.6 \\\bottomrule
+  \end{tabular}
+\end{table}
+
+
+\section{Figures}
+Figures can contain arbitrary graphics like data plots, diagrams (fletcher, cetz), images, screenshots \textit{etc.} All of these contents should be referenced as "Figure~x". A label will do that automatically in Typst. \cref{fig:enter-label} shows a simple fletcher diagram.
+
+% Always use colorlet to rename colors
+% - to check for consistent color usage (use the same color for the same
+%   purposes)
+% - for easy changes (if I want to change this color, I need to change it only
+%   once now - for all other team members I need to change it in 4 places in the
+%   graphic)
+\colorlet{member1}{blue}
+% \colorlet{member1}{magenta}
+
+\begin{figure}[b]
+    \centering
+\begin{tikzpicture}[scale=1.5, transform shape]
+% [transform canvas={scale=1.5}]  % transform canvas affects the shift so that centering does not work properly
+    \node[draw=member1, fill=member1!20, isosceles triangle, shape border rotate=90, minimum width=1.2cm] (m1b) at (0,-0.9) {};
+    \node[draw=member1, fill=member1!20, circle, minimum width=1cm]                                       (m1h) at (0,-0.0) {};
+    \node[draw=orange,  fill=orange!20,  isosceles triangle, shape border rotate=90, minimum width=1.2cm] (m2b) at (2,-0.9) {};
+    \node[draw=orange,  fill=orange!20,  circle, minimum width=1cm]                                       (m2h) at (2,-0.0) {};
+    \node[draw=green,   fill=green!20,   isosceles triangle, shape border rotate=90, minimum width=1.2cm] (m3b) at (1,-1.2) {};
+    \node[draw=green,   fill=green!20,   circle, minimum width=1cm]                                       (m3h) at (1,-0.3) {};
+\end{tikzpicture}
+    \caption{An example caption.}
+    \label{fig:enter-label}
+\end{figure}
+
+
+\section{Language}
+When writing a scientific paper, it is essential to use language that is clear, precise, and formal. Use the past tense when describing methods and results, as these refer to actions that have already been completed. Present tense is appropriate when discussing established knowledge or explaining the implications of your findings. 
+
+In computer science, we prefer the active voice because it is more direct and easier to understand than the passive voice, which can make sentences unnecessarily complex. 
+
+Avoid using synonyms for key terms; consistency in terminology helps prevent confusion. 
+
+Abbreviations should always be spelled out in full the first time they appear, followed by the abbreviation in parentheses---for example, scanning electron microscope (SEM). After that, you may use the abbreviation alone.
+
+Finally, do not use contractions such as "it's" or "won't"; scientific writing requires a formal tone, and these short forms are not appropriate.
+
+
+\section{Citations and Bibliography}
+Proper citation and bibliography management are essential for academic integrity and clarity. In general, always ensure that citations are accurate, consistent, and correspond to the correct sources. In LaTeX and Typst, the recommended way to handle references is by using Bib(TeX) which allows for flexible and standardized formatting. The template will take care of the most important aspects. However, you should never blindly copy BibTeX entries from the internet, especially from sources like Google Scholar, which often contain incomplete, incorrect, or poorly formatted metadata. Instead, always check the official publisher’s website (not arXiv!), which typically provides more reliable BibTeX entries---though these may include excessive fields or information not needed for our bibliography style. It’s good practice to clean and simplify these entries (\eg{} trimming unnecessary fields) to maintain a consistent and professional bibliography. Author (all authors!---lastname, firstnames), title, year and venue/conference/journal including volume (keywords in a BibTex file may be: booktitle, publisher, journal, volume) should always be present. Please omit details like doi, pages, exact dates, isbn \textit{etc.}
+
+When citing websites, be cautious and selective—use them only when they are credible, stable, and relevant (\eg{} official documentation, white papers, or standards bodies). In BibTeX, websites can be cited using the `@misc` or `@online` entry type (depending on the bibliography package), and must include at minimum the title, author or organization, access date, and URL. Never cite vague or transient sources like random blog posts, unless they are from recognized experts or institutions. When a website was \textit{used} or data downloaded rather than actually having citable information read there, it may be sufficient to add a footnote with a URL without creating a full BibTex entry. \cite{Nobody06}
+
+\section{AI and Plagiarism}
+Feel free to use AI-based tools such as Grammarly and DeepL to aid you with writing better English. We strongly encourage that.
+
+Any use of generative AI (ChatGPT, Copilot, Llama, Gemini, Mixtral \textit{etc.}) counts as plagiarism. AIs often invent "facts" or may give direct citations from relevant sources. Direct citations (direct copy of text or translated text) whether marked or unmarked is plagiarism.
+
+Any form of plagiarism will lead to immediate failure of the course.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}
+\endinput

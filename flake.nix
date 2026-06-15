@@ -16,6 +16,7 @@
             devShells = forAllSystems ({ pkgs }: {
                 default = pkgs.mkShell {
                     packages = [
+                        pkgs.texliveFull
                         pkgs.duckdb
                         pkgs.nodejs
                     ];

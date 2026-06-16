@@ -55,6 +55,12 @@
            Seminar: \href{https://db.cs.uni-tuebingen.de/teaching/ss26/sql-is-a-programming-language/}{\textit{SQL is a Programming Language}}}
 \date{\today}
 
+% ── Data assets for the pipeline visualisations ─────────────
+% Regenerate with: ./presentation/build_assets.sh
+\input{assets/raw}
+\input{assets/smoothed}
+\input{assets/thinned}
+
 % ============================================================
 \begin{document}
 
@@ -167,8 +173,7 @@
 
 % ── Stage 1 ─────────────────────────────────────────────────
 \begin{frame}[fragile]{Stage 1 — Smoothing}
-  Remove quantisation noise with an exponential moving average
-  (IIR low-pass filter): each smoothed point is a weighted blend
+  Remove quantisation noise with an moving average: each smoothed point is a weighted blend
   of the previous smoothed point and the new raw point.
   \[
     x^s_i = \alpha \cdot x^s_{i-1} + (1-\alpha) \cdot x^r_i
@@ -176,7 +181,15 @@
     y^s_i = \alpha \cdot y^s_{i-1} + (1-\alpha) \cdot y^r_i
   \]
 
-  \alert{Here a example + visualization like in the blog article!}
+  \begin{center}
+  \begin{tikzpicture}[xscale=0.06, yscale=0.06]
+    \foreach \x/\y in \rawCoordsDots
+      { \fill[gray!55, opacity=0.6] (\x,\y) circle (0.7); }
+    \draw[mLightBrown, thick] plot coordinates {\smoothedCoordsLine};
+    \node[font=\scriptsize, gray]        at (-23.5, -34) {raw (\rawCount)};
+    \node[font=\scriptsize, mLightBrown] at ( 23.5, -34) {smoothed ($\alpha = 0.8$)};
+  \end{tikzpicture}
+  \end{center}
 \end{frame}
 
 \begin{frame}[fragile]{Stage 1 — Smoothing Implementation}
@@ -188,8 +201,8 @@ SELECT pos,
     WHERE pos = 1
     UNION ALL
     SELECT r.pos,
-        get('factor')*s.x + (1 - get('factor')) * r.x AS sx,
-        get('factor')*s.y + (1 - get('factor')) * r.y AS sy
+        get('alpha')*s.x + (1 - get('alpha')) * r.x AS sx,
+        get('alpha')*s.y + (1 - get('alpha')) * r.y AS sy
     FROM raw_data r
         JOIN smoothing_phase s ON r.pos = s.pos + 1
   \end{lstlisting}
@@ -204,14 +217,27 @@ SELECT pos,
     \iff
     \sqrt{(x^s_i - x^t_{j-1})^2 + (y^s_i - y^t_{j-1})^2} \;>\; \tau
   \]
-  \begin{itemize}
-    \item Threshold $\tau$ defines an acceptance radius around the last kept point
-    \item Original GRAIL used a bounding-square test ($|\Delta x| \geq \tau$ or $|\Delta y| \geq \tau$);
-          we use Euclidean distance — rotation-invariant
-    \item Pipeline value: $\tau = 0.2$ (normalised coordinates)
-  \end{itemize}
 
-  \alert{Here a example + visualization like in the blog article!}
+  \begin{columns}
+    \begin{column}{0.3\textwidth}
+      \begin{tikzpicture}[xscale=0.06, yscale=0.06]
+        \draw[gray!50, thin] plot coordinates {\smoothedCoordsLine};
+        \foreach \x/\y in \thinnedCoordsDots
+          { \fill[mLightBrown] (\x,\y) circle (0.9); }
+        \node[font=\scriptsize, gray]        at (-23.5, -34) {smoothed (\smoothedCount)};
+        \node[font=\scriptsize, mLightBrown] at ( 23.5, -34) {thinned ($\tau{=}\thinnedTau$): \thinnedCount};
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.6\textwidth}
+      \begin{itemize}
+        \item Threshold $\tau$ defines an acceptance radius around the last kept point
+        \item Original GRAIL used a bounding-square test ($|\Delta x| \geq \tau$ or $|\Delta y| \geq \tau$);
+              we use Euclidean distance — rotation-invariant
+        \item Pipeline value: $\tau = 2$ (raw pixel scale)
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}[fragile]{Stage 2 — Thinning Implementation}
@@ -226,7 +252,7 @@ SELECT pos,
         SELECT pos, x, y
         FROM smoothing_phase
         WHERE pos > ts.pos
-          AND sqrt((x - ts.x)^2 + (y - ts.y)^2) > getvariable('thinning_threshold')
+          AND sqrt((x - ts.x)^2+(y - ts.y)^2) > getvariable('tau')
         ORDER BY pos
         LIMIT 1
     ) next_keep

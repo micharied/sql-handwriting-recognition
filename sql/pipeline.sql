@@ -1,5 +1,5 @@
 SET VARIABLE smoothing_factor = 0.8;
-SET VARIABLE thinning_threshold = 0.2;
+SET VARIABLE thinning_threshold = 2;
 
 CREATE OR REPLACE TEMPORARY MACRO cell_of(px, py, min_x, min_y, w, h) AS
     LEAST(FLOOR((px - min_x) / NULLIF(w, 0) * 4), 3)::INTEGER * 4
